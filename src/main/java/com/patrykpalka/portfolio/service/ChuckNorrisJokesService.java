@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -20,8 +21,12 @@ public class ChuckNorrisJokesService {
     }
 
     public String getJoke() {
-        ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.GET, null, Map.class);
-        Map<String, String> responseBody = response.getBody();
-        return responseBody != null ? responseBody.get("value") : "No joke found!";
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.GET, null, Map.class);
+            Map<String, String> responseBody = response.getBody();
+            return responseBody != null ? responseBody.get("value") : "No joke found!";
+        } catch (RestClientException e) {
+            return "No joke found!";
+        }
     }
 }

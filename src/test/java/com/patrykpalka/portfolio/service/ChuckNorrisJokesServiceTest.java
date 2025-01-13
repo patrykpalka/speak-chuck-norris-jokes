@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -54,6 +55,23 @@ class ChuckNorrisJokesServiceTest {
                 null,
                 Map.class
         )).thenReturn(responseEntity);
+
+        // when
+        String response = chuckNorrisJokesService.getJoke();
+
+        // then
+        Assertions.assertEquals("No joke found!", response);
+    }
+
+    @Test
+    void shouldReturnNoJokeFoundWhenApiCallFails() {
+        // given
+        when(restTemplate.exchange(
+                "https://api.chucknorris.io/jokes/random",
+                HttpMethod.GET,
+                null,
+                Map.class
+        )).thenThrow(new RestClientException("API is down") {});
 
         // when
         String response = chuckNorrisJokesService.getJoke();
