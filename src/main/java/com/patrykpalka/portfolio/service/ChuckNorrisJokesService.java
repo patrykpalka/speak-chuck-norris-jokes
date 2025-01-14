@@ -13,18 +13,25 @@ import java.util.Map;
 public class ChuckNorrisJokesService {
 
     private final RestTemplate restTemplate;
+    private final VoiceRssService voiceRssService;
+    private final AudioPlaybackService audioPlaybackService;
     private final String apiUrl = "https://api.chucknorris.io/jokes/random";
 
     @Autowired
-    public ChuckNorrisJokesService(RestTemplate restTemplate) {
+    public ChuckNorrisJokesService(RestTemplate restTemplate, AudioPlaybackService audioPlaybackService, VoiceRssService voiceRssService) {
         this.restTemplate = restTemplate;
+        this.voiceRssService = voiceRssService;
+        this.audioPlaybackService = audioPlaybackService;
     }
 
     public String getJoke() {
         try {
             ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.GET, null, Map.class);
             Map<String, String> responseBody = response.getBody();
-            return responseBody != null ? responseBody.get("value") : "No joke found!";
+            if (responseBody == null) return "No joke found!";
+            String joke = responseBody.get("value");
+            audioPlaybackService.playAudioWithClip(voiceRssService.getVoiceRss(joke));
+            return joke;
         } catch (RestClientException e) {
             return "No joke found!";
         }

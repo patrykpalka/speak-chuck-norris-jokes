@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 public class VoiceRssService {
 
     private final RestTemplate restTemplate;
-    private final String voiceRssApiUrlPrefix = "http://api.voicerss.org/?key=bf180c3ca62a4758b13a33c001d48aee&hl=en-us&v=Mary&src=";
+    private final String voiceRssApiUrlPrefix = "http://api.voicerss.org/?key=279b6ea964d74e8aa6ccb53a08593545&hl=en-us&v=Mary&c=WAV&f=44khz_16bit_stereo&src=";
 
     @Autowired
     public VoiceRssService(RestTemplate restTemplate) {
