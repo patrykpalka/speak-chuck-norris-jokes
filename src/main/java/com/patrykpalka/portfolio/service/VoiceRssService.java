@@ -10,7 +10,6 @@ import org.springframework.web.client.RestTemplate;
 public class VoiceRssService {
 
     private final RestTemplate restTemplate;
-    private final String voiceRssApiUrlPrefix = "http://api.voicerss.org/?key=279b6ea964d74e8aa6ccb53a08593545&hl=en-us&v=Mary&c=WAV&f=44khz_16bit_stereo&src=";
 
     @Autowired
     public VoiceRssService(RestTemplate restTemplate) {
@@ -19,12 +18,21 @@ public class VoiceRssService {
 
     public byte[] getVoiceRss(String text) {
         try {
-            String apiUrl = voiceRssApiUrlPrefix + text;
+            String urlFormat = "https://api.voicerss.org/?key=%s&hl=%s&v=%s&c=%s&f=%s&src=%s";
+
+            String key = "279b6ea964d74e8aa6ccb53a08593545";
+            String language = "en-us";
+            String voice = "Mary";
+            String audioCodec = "WAV";
+            String audioFormat = "44khz_16bit_stereo";
+
+            String apiUrl = String.format(urlFormat, key, language, voice, audioCodec, audioFormat, text);
 
             ResponseEntity<byte[]> response = restTemplate.getForEntity(apiUrl, byte[].class);
+            byte[] responseBody = response.getBody();
 
-            if (response.getBody() != null && response.getStatusCode().is2xxSuccessful()) {
-                return response.getBody();
+            if (responseBody != null && response.getStatusCode().is2xxSuccessful()) {
+                return responseBody;
             } else {
                 throw new RestClientException("Invalid response from Voice RSS API");
             }
