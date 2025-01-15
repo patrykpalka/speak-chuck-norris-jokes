@@ -11,8 +11,7 @@ public class SpeakChuckNorrisJokesApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpeakChuckNorrisJokesApplication.class);
 
     public static void main(String[] args) {
-        LOGGER.info("Starting Speak Chuck Norris Jokes Application");
+        LOGGER.info("Initializing Speak Chuck Norris Jokes Application");
         SpringApplication.run(SpeakChuckNorrisJokesApplication.class, args);
-        LOGGER.info("Speak Chuck Norris Jokes Application started successfully");
     }
 }

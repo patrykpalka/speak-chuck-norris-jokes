@@ -1,5 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -9,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class ChuckNorrisJokesService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChuckNorrisJokesService.class);
     private final RestTemplate restTemplate;
     private final VoiceRssService voiceRssService;
     private final AudioPlaybackService audioPlaybackService;
@@ -20,7 +23,7 @@ public class ChuckNorrisJokesService {
         this.audioPlaybackService = audioPlaybackService;
     }
 
-    public String getJoke() {
+    public String getAndPlayJoke() {
         try {
             String apiUrl = "https://api.chucknorris.io/jokes/random";
 
@@ -28,13 +31,14 @@ public class ChuckNorrisJokesService {
             String joke = response.getBody();
 
             if (joke != null) {
-                audioPlaybackService.playAudioWithClip(voiceRssService.getVoiceRss(joke));
+                byte[] audioData = voiceRssService.getVoiceRss(joke);
+                audioPlaybackService.playAudioWithClip(audioData);
                 return joke;
             } else {
                 throw new RestClientException("Could not get joke");
             }
         } catch (RestClientException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
             return e.getMessage();
         }
     }

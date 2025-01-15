@@ -1,5 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -9,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class VoiceRssService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(VoiceRssService.class);
     private final RestTemplate restTemplate;
 
     @Autowired
@@ -37,7 +40,7 @@ public class VoiceRssService {
                 throw new RestClientException("Invalid response from Voice RSS API");
             }
         } catch (RestClientException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage(), e);
             return null;
         }
     }

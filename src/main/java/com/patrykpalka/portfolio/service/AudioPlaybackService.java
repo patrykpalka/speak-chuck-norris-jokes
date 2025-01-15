@@ -1,5 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.sound.sampled.*;
@@ -10,9 +12,11 @@ import java.io.InputStream;
 @Service
 public class AudioPlaybackService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AudioPlaybackService.class);
+
     public void playAudioWithClip(byte[] audioData) {
         if (audioData == null || audioData.length == 0) {
-            System.out.println("Audio data is null or empty");
+            LOGGER.error("Audio data is null or empty");
             return;
         }
 
@@ -25,12 +29,8 @@ public class AudioPlaybackService {
             clip.start();
             clip.drain();
 
-        } catch (IOException e) {
-            System.out.println("IOException: " + e.getMessage());
-        } catch (UnsupportedAudioFileException e) {
-            System.out.println("UnsupportedAudioFileException: " + e.getMessage());
-        } catch (LineUnavailableException e) {
-            System.out.println("LineUnavailableException: " + e.getMessage());
+        } catch (IOException | UnsupportedAudioFileException | LineUnavailableException e) {
+            LOGGER.error(e.getMessage(), e);
         }
     }
 }

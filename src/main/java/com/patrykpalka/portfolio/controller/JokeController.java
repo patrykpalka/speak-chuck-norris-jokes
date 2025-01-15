@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/jokes")
 public class JokeController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JokeController.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(JokeController.class);
     private final ChuckNorrisJokesService jokesService;
 
     @Autowired
@@ -22,10 +22,8 @@ public class JokeController {
 
     @GetMapping("/random")
     public String randomJoke() {
-        LOGGER.info("randomJoke()");
-        String joke = jokesService.getJoke();
-        LOGGER.info("randomJoke() returns: " + joke);
-
+        String joke = jokesService.getAndPlayJoke();
+        LOGGER.debug("randomJoke() returns: {}", joke);
         return joke;
     }
 }

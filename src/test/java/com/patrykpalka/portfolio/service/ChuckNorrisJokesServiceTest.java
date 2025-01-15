@@ -38,7 +38,7 @@ class ChuckNorrisJokesServiceTest {
         )).thenReturn(responseEntity);
 
         // when
-        String response = chuckNorrisJokesService.getJoke();
+        String response = chuckNorrisJokesService.getAndPlayJoke();
 
         // then
         Assertions.assertEquals("Chuck Norris can divide by zero.", response);
@@ -57,7 +57,7 @@ class ChuckNorrisJokesServiceTest {
         )).thenReturn(responseEntity);
 
         // when
-        String response = chuckNorrisJokesService.getJoke();
+        String response = chuckNorrisJokesService.getAndPlayJoke();
 
         // then
         Assertions.assertEquals("No joke found!", response);
@@ -74,7 +74,7 @@ class ChuckNorrisJokesServiceTest {
         )).thenThrow(new RestClientException("API is down") {});
 
         // when
-        String response = chuckNorrisJokesService.getJoke();
+        String response = chuckNorrisJokesService.getAndPlayJoke();
 
         // then
         Assertions.assertEquals("No joke found!", response);
