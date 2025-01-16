@@ -6,11 +6,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Mockito.when;
@@ -45,25 +47,6 @@ class ChuckNorrisJokesServiceTest {
     }
 
     @Test
-    void shouldReturnNoJokeFoundWhenApiReturnsNull() {
-        // given
-        ResponseEntity<Map> responseEntity = ResponseEntity.ok(null);
-
-        when(restTemplate.exchange(
-                "https://api.chucknorris.io/jokes/random",
-                HttpMethod.GET,
-                null,
-                Map.class
-        )).thenReturn(responseEntity);
-
-        // when
-        String response = chuckNorrisJokesService.getAndPlayRandomJoke();
-
-        // then
-        Assertions.assertEquals("No joke found!", response);
-    }
-
-    @Test
     void shouldReturnNoJokeFoundWhenApiCallFails() {
         // given
         when(restTemplate.exchange(
@@ -78,5 +61,46 @@ class ChuckNorrisJokesServiceTest {
 
         // then
         Assertions.assertEquals("No joke found!", response);
+    }
+
+    @Test
+    void shouldReturnListOfCategories() {
+        // given
+        List<String> categories = List.of(
+                "animal","career","celebrity","dev","explicit","fashion","food","history",
+                "money","movie","music","political","religion","science","sport","travel");
+        ResponseEntity<List<String>> responseEntity = ResponseEntity.ok(categories);
+
+        when(restTemplate.exchange(
+                "https://api.chucknorris.io/jokes/categories",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<String>>() {}
+        )).thenReturn(responseEntity);
+
+        // when
+        List<String> response = chuckNorrisJokesService.getListOfCategories();
+
+        // then
+        Assertions.assertEquals(categories, response);
+    }
+
+    @Test
+    void shouldReturnNullWhenApiCallFails() {
+        // given
+        ResponseEntity<List<String>> responseEntity = ResponseEntity.ok(null);
+
+        when(restTemplate.exchange(
+                "https://api.chucknorris.io/jokes/categories",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<String>>() {}
+        )).thenReturn(responseEntity);
+
+        // when
+        List<String> response = chuckNorrisJokesService.getListOfCategories();
+
+        // then
+        Assertions.assertNull(response);
     }
 }
