@@ -27,23 +27,27 @@ public class ChuckNorrisJokesService {
         this.audioPlaybackService = audioPlaybackService;
     }
 
-    public String getAndPlayJoke() {
+    public String getAndPlayRandomJoke() {
         try {
             String apiUrl = "https://api.chucknorris.io/jokes/random";
 
             ResponseEntity<String> response = restTemplate.getForEntity(apiUrl, String.class);
             String joke = response.getBody();
 
-            if (joke != null) {
-                byte[] audioData = voiceRssService.getVoiceRss(joke);
-                audioPlaybackService.playAudioWithClip(audioData);
-                return joke;
-            } else {
-                throw new RestClientException("Could not get joke");
-            }
+            playJoke(joke);
+            return joke;
         } catch (RestClientException e) {
             LOGGER.error(e.getMessage(), e);
             return e.getMessage();
+        }
+    }
+
+    private void playJoke(String joke) {
+        if (joke != null) {
+            byte[] audioData = voiceRssService.getVoiceRss(joke);
+            audioPlaybackService.playAudioWithClip(audioData);
+        } else {
+            throw new RestClientException("Could not get joke");
         }
     }
 
@@ -68,6 +72,21 @@ public class ChuckNorrisJokesService {
         } catch (RestClientException e) {
             LOGGER.error(e.getMessage(), e);
             return null;
+        }
+    }
+
+    public String getAndPlayRandomJokeByCategory(String category) {
+        try {
+            String apiUrlFormat = "https://api.chucknorris.io/jokes/random?category=%s";
+
+            ResponseEntity<String> response = restTemplate.getForEntity(String.format(apiUrlFormat, category), String.class);
+            String joke = response.getBody();
+
+            playJoke(joke);
+            return joke;
+        } catch (RestClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            return e.getMessage();
         }
     }
 }

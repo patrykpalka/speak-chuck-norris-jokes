@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -23,8 +24,14 @@ public class JokeController {
     }
 
     @GetMapping("/random")
-    public String randomJoke() {
-        String joke = jokesService.getAndPlayJoke();
+    public String randomJoke(@RequestParam(required = false) String category) {
+        String joke;
+
+        if (category == null) {
+            joke = jokesService.getAndPlayRandomJoke();
+        } else {
+            joke = jokesService.getAndPlayRandomJokeByCategory(category);
+        }
         LOGGER.debug("randomJoke() returns: {}", joke);
         return joke;
     }
