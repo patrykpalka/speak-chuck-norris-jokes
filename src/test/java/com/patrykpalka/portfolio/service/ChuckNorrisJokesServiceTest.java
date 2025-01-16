@@ -9,12 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 import static org.mockito.Mockito.when;
 
@@ -36,14 +33,11 @@ class ChuckNorrisJokesServiceTest {
     @Test
     void shouldReturnJokeWhenApiIsAvailable() {
         // given
-        Map<String, String> apiResponse = Map.of("value", "Chuck Norris can divide by zero.");
-        ResponseEntity<Map> responseEntity = ResponseEntity.ok(apiResponse);
+        ResponseEntity<String> responseEntity = ResponseEntity.ok("Chuck Norris can divide by zero.");
 
-        when(restTemplate.exchange(
+        when(restTemplate.getForEntity(
                 "https://api.chucknorris.io/jokes/random",
-                HttpMethod.GET,
-                null,
-                Map.class
+                String.class
         )).thenReturn(responseEntity);
 
         // when
@@ -56,18 +50,18 @@ class ChuckNorrisJokesServiceTest {
     @Test
     void shouldReturnNoJokeFoundWhenApiCallFails() {
         // given
-        when(restTemplate.exchange(
+        ResponseEntity<String> responseEntity = ResponseEntity.ok("Could not get joke");
+
+        when(restTemplate.getForEntity(
                 "https://api.chucknorris.io/jokes/random",
-                HttpMethod.GET,
-                null,
-                Map.class
-        )).thenThrow(new RestClientException("API is down") {});
+                String.class
+        )).thenReturn(responseEntity);
 
         // when
         String response = chuckNorrisJokesService.getAndPlayRandomJoke();
 
         // then
-        Assertions.assertEquals("No joke found!", response);
+        Assertions.assertEquals("Could not get joke", response);
     }
 
     @Test
