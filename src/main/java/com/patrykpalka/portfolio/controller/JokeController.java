@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/jokes")
 public class JokeController {
@@ -25,5 +27,12 @@ public class JokeController {
         String joke = jokesService.getAndPlayJoke();
         LOGGER.debug("randomJoke() returns: {}", joke);
         return joke;
+    }
+
+    @GetMapping("/categories")
+    public List<String> categories() {
+        List<String> categories = jokesService.getListOfCategories();
+        LOGGER.debug("categories() returns: {}", categories);
+        return categories;
     }
 }
