@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.mockito.Mockito.when;
 
@@ -22,6 +23,12 @@ class ChuckNorrisJokesServiceTest {
 
     @InjectMocks
     private ChuckNorrisJokesService chuckNorrisJokesService;
+
+    @Mock
+    private AudioPlaybackService audioPlaybackService;
+
+    @Mock
+    private VoiceRssService voiceRssService;
 
     @Mock
     private RestTemplate restTemplate;
@@ -102,5 +109,39 @@ class ChuckNorrisJokesServiceTest {
 
         // then
         Assertions.assertNull(response);
+    }
+
+    @Test
+    void shouldReturnJokeFromCategoryWhenApiIsAvailable() {
+        // given
+        ResponseEntity<String> responseEntity = ResponseEntity.ok("Chuck Norris can't test for equality because he has no equal.");
+
+        when(restTemplate.getForEntity(
+                "https://api.chucknorris.io/jokes/random?category=dev",
+                String.class
+        )).thenReturn(responseEntity);
+
+        // when
+        String response = chuckNorrisJokesService.getAndPlayRandomJokeByCategory("dev");
+
+        // then
+        Assertions.assertEquals("Chuck Norris can't test for equality because he has no equal.", response);
+    }
+
+    @Test
+    void shouldReturnErrorMessageWhenApiCallFails() {
+        // given
+        ResponseEntity<String> responseEntity = ResponseEntity.ok("Could not get joke");
+
+        when(restTemplate.getForEntity(
+                "https://api.chucknorris.io/jokes/random?category=dev",
+                String.class
+        )).thenReturn(responseEntity);
+
+        // when
+        String response = chuckNorrisJokesService.getAndPlayRandomJokeByCategory("dev");
+
+        // then
+        Assertions.assertEquals("Could not get joke", response);
     }
 }
