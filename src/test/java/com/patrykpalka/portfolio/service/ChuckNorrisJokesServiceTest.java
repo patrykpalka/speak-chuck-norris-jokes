@@ -9,11 +9,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ChuckNorrisJokesServiceTest {
@@ -22,10 +25,10 @@ class ChuckNorrisJokesServiceTest {
     private ChuckNorrisJokesService chuckNorrisJokesService;
 
     @Mock
-    private AudioPlaybackService audioPlaybackService;
+    private VoiceRssService voiceRssService;
 
     @Mock
-    private VoiceRssService voiceRssService;
+    private AudioPlaybackService audioPlaybackService;
 
     @Mock
     private RestTemplate restTemplate;
@@ -33,35 +36,41 @@ class ChuckNorrisJokesServiceTest {
     @Test
     void shouldReturnJokeWhenApiIsAvailable() {
         // given
-        ResponseEntity<String> responseEntity = ResponseEntity.ok("Chuck Norris can divide by zero.");
+        String joke = "Chuck Norris can divide by zero.";
+        ResponseEntity<String> responseEntity = ResponseEntity.ok(joke);
+        byte[] audioData = "audio".getBytes();
 
         when(restTemplate.getForEntity(
                 "https://api.chucknorris.io/jokes/random",
                 String.class
         )).thenReturn(responseEntity);
+        when(voiceRssService.getVoiceRss(joke)).thenReturn(audioData);
+        doNothing().when(audioPlaybackService).playAudioWithClip(audioData);
 
         // when
         String response = chuckNorrisJokesService.getAndPlayRandomJoke();
 
         // then
-        Assertions.assertEquals("Chuck Norris can divide by zero.", response);
+        Assertions.assertEquals(joke, response);
+        verify(voiceRssService).getVoiceRss(joke);
+        verify(audioPlaybackService).playAudioWithClip(audioData);
     }
 
     @Test
-    void shouldReturnNoJokeFoundWhenApiCallFails() {
+    void shouldReturnErrorMessageWhenApiCallFailsOrWhenJokeIsNull() {
         // given
-        ResponseEntity<String> responseEntity = ResponseEntity.ok("Could not get joke");
-
         when(restTemplate.getForEntity(
                 "https://api.chucknorris.io/jokes/random",
                 String.class
-        )).thenReturn(responseEntity);
+        )).thenReturn(ResponseEntity.ok(null));
 
         // when
         String response = chuckNorrisJokesService.getAndPlayRandomJoke();
 
         // then
         Assertions.assertEquals("Could not get joke", response);
+        verify(voiceRssService, never()).getVoiceRss(anyString());
+        verify(audioPlaybackService, never()).playAudioWithClip(any());
     }
 
     @Test
@@ -87,16 +96,14 @@ class ChuckNorrisJokesServiceTest {
     }
 
     @Test
-    void shouldReturnNullWhenApiCallFails() {
+    void shouldReturnNullWhenCategoriesApiCallFailsOrResponseIsNull() {
         // given
-        ResponseEntity<List<String>> responseEntity = ResponseEntity.ok(null);
-
         when(restTemplate.exchange(
                 "https://api.chucknorris.io/jokes/categories",
                 HttpMethod.GET,
                 null,
                 new ParameterizedTypeReference<List<String>>() {}
-        )).thenReturn(responseEntity);
+        )).thenReturn(ResponseEntity.ok(null));
 
         // when
         List<String> response = chuckNorrisJokesService.getListOfCategories();
@@ -108,34 +115,41 @@ class ChuckNorrisJokesServiceTest {
     @Test
     void shouldReturnJokeFromCategoryWhenApiIsAvailable() {
         // given
-        ResponseEntity<String> responseEntity = ResponseEntity.ok("Chuck Norris can't test for equality because he has no equal.");
+        String joke = "Chuck Norris can't test for equality because he has no equal.";
+        byte[] audioData = "audio".getBytes();
 
         when(restTemplate.getForEntity(
                 "https://api.chucknorris.io/jokes/random?category=dev",
                 String.class
-        )).thenReturn(responseEntity);
+        )).thenReturn(ResponseEntity.ok(joke));
+        when(voiceRssService.getVoiceRss(joke)).thenReturn(audioData);
+        doNothing().when(audioPlaybackService).playAudioWithClip(audioData);
 
         // when
         String response = chuckNorrisJokesService.getAndPlayRandomJokeByCategory("dev");
 
         // then
-        Assertions.assertEquals("Chuck Norris can't test for equality because he has no equal.", response);
+        Assertions.assertEquals(joke, response);
+        verify(voiceRssService).getVoiceRss(joke);
+        verify(audioPlaybackService).playAudioWithClip(audioData);
     }
 
     @Test
-    void shouldReturnErrorMessageWhenApiCallFails() {
+    void shouldReturnErrorMessageWhenCategoryApiCallFailsOrWhenJokeIsNull() {
         // given
-        ResponseEntity<String> responseEntity = ResponseEntity.ok("Could not get joke");
+        String errorMessage = "Could not get joke";
 
         when(restTemplate.getForEntity(
                 "https://api.chucknorris.io/jokes/random?category=dev",
                 String.class
-        )).thenReturn(responseEntity);
+        )).thenThrow(new RestClientException(errorMessage));
 
         // when
         String response = chuckNorrisJokesService.getAndPlayRandomJokeByCategory("dev");
 
         // then
-        Assertions.assertEquals("Could not get joke", response);
+        Assertions.assertEquals(errorMessage, response);
+        verify(voiceRssService, never()).getVoiceRss(anyString());
+        verify(audioPlaybackService, never()).playAudioWithClip(any());
     }
 }
