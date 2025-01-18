@@ -1,6 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,15 +22,20 @@ class VoiceRssServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
-    String urlFormat = "https://api.voicerss.org/?key=%s&hl=%s&v=%s&c=%s&f=%s&src=%s";
+    String apiUrl;
 
-    String key = "279b6ea964d74e8aa6ccb53a08593545";
-    String language = "en-us";
-    String voice = "Mary";
-    String audioCodec = "WAV";
-    String audioFormat = "44khz_16bit_stereo";
+    @BeforeEach
+    void setUp() {
+        String urlFormat = "https://api.voicerss.org/?key=%s&hl=%s&v=%s&c=%s&f=%s&src=%s";
 
-    String apiUrl = String.format(urlFormat, key, language, voice, audioCodec, audioFormat, "test");
+        String key = "279b6ea964d74e8aa6ccb53a08593545";
+        String language = "en-us";
+        String voice = "Mary";
+        String audioCodec = "WAV";
+        String audioFormat = "44khz_16bit_stereo";
+
+        apiUrl = String.format(urlFormat, key, language, voice, audioCodec, audioFormat, "test");
+    }
 
     @Test
     void shouldReturnAudioDataWhenApiIsAvailable() {
