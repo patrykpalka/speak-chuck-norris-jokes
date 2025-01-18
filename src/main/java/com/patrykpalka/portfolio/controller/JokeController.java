@@ -1,9 +1,12 @@
 package com.patrykpalka.portfolio.controller;
 
+import com.patrykpalka.portfolio.dto.CategoryResponseDTO;
+import com.patrykpalka.portfolio.dto.RandomJokeResponseDTO;
 import com.patrykpalka.portfolio.service.ChuckNorrisJokesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,7 +27,7 @@ public class JokeController {
     }
 
     @GetMapping("/random")
-    public String randomJoke(@RequestParam(required = false) String category) {
+    public ResponseEntity<RandomJokeResponseDTO> randomJoke(@RequestParam(required = false) String category) {
         String joke;
 
         if (category == null) {
@@ -32,14 +35,20 @@ public class JokeController {
         } else {
             joke = jokesService.getAndPlayRandomJokeByCategory(category);
         }
-        LOGGER.debug("randomJoke() returns: {}", joke);
-        return joke;
+
+        RandomJokeResponseDTO randomJokeResponseDTO = new RandomJokeResponseDTO(joke);
+        LOGGER.debug("randomJoke() returns: {}", randomJokeResponseDTO);
+
+        return ResponseEntity.ok(randomJokeResponseDTO);
     }
 
     @GetMapping("/categories")
-    public List<String> categories() {
+    public ResponseEntity<CategoryResponseDTO> categories() {
         List<String> categories = jokesService.getListOfCategories();
-        LOGGER.debug("categories() returns: {}", categories);
-        return categories;
+
+        CategoryResponseDTO categoryResponseDTO = new CategoryResponseDTO(categories);
+        LOGGER.debug("categories() returns: {}", categoryResponseDTO);
+
+        return ResponseEntity.ok(categoryResponseDTO);
     }
 }
