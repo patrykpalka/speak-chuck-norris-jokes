@@ -1,7 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.patrykpalka.portfolio.exception.AudioDataEmptyException;
+import com.patrykpalka.portfolio.exception.AudioPlaybackException;
 import org.springframework.stereotype.Service;
 
 import javax.sound.sampled.*;
@@ -12,12 +12,9 @@ import java.io.InputStream;
 @Service
 public class AudioPlaybackService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AudioPlaybackService.class);
-
     public void playAudioWithClip(byte[] audioData) {
         if (audioData == null || audioData.length == 0) {
-            LOGGER.error("Audio data is null or empty");
-            return;
+            throw new AudioDataEmptyException("Audio data is empty. Cannot play audio.");
         }
 
         try {
@@ -29,8 +26,12 @@ public class AudioPlaybackService {
             clip.start();
             clip.drain();
 
-        } catch (IOException | UnsupportedAudioFileException | LineUnavailableException e) {
-            LOGGER.error(e.getMessage(), e);
+        } catch (LineUnavailableException e) {
+            throw new AudioPlaybackException("Line unavailable for audio playback.", e);
+        } catch (UnsupportedAudioFileException e) {
+            throw new AudioPlaybackException("Unsupported audio file format.", e);
+        } catch (IOException e) {
+            throw new AudioPlaybackException("I/O error occurred during audio playback.", e);
         }
     }
 }
