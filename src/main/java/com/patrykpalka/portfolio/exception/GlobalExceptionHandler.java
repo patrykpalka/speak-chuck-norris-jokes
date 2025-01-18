@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now().toString(),
                 path
         );
-        LOGGER.error(logPrefix + ": {} - Path: {}", message, path, e);
+        LOGGER.error("{}: {} - Path: {}", logPrefix, message, path, e);
         return ResponseEntity
                 .status(status)
                 .body(errorResponseDTO);
@@ -70,6 +70,28 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "Voice RSS API error",
+                e);
+    }
+
+    @ExceptionHandler(ChuckNorrisApiException.class)
+    public ResponseEntity<ErrorResponseDTO> handleChuckNorrisApiException(
+            ChuckNorrisApiException e,
+            HttpServletRequest request) {
+        return createErrorResponse(
+                e.getMessage(),
+                request.getRequestURI(),
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Chuck Norris API error",
+                e);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalArgumentException(IllegalArgumentException e, HttpServletRequest request) {
+        return createErrorResponse(
+                e.getMessage(),
+                request.getRequestURI(),
+                HttpStatus.BAD_REQUEST,
+                "Illegal argument",
                 e);
     }
 

@@ -1,7 +1,6 @@
 package com.patrykpalka.portfolio.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.patrykpalka.portfolio.exception.ChuckNorrisApiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -15,7 +14,6 @@ import java.util.List;
 @Service
 public class ChuckNorrisJokesService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChuckNorrisJokesService.class);
     private final RestTemplate restTemplate;
     private final VoiceRssService voiceRssService;
     private final AudioPlaybackService audioPlaybackService;
@@ -28,27 +26,9 @@ public class ChuckNorrisJokesService {
     }
 
     public String getAndPlayRandomJoke() {
-        try {
-            String apiUrl = "https://api.chucknorris.io/jokes/random";
-
-            ResponseEntity<String> response = restTemplate.getForEntity(apiUrl, String.class);
-            String joke = response.getBody();
-
-            playJoke(joke);
-            return joke;
-        } catch (RestClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            return e.getMessage();
-        }
-    }
-
-    private void playJoke(String joke) {
-        if (joke != null) {
-            byte[] audioData = voiceRssService.getVoiceRss(joke);
-            audioPlaybackService.playAudioWithClip(audioData);
-        } else {
-            throw new RestClientException("Could not get joke");
-        }
+        String joke = getJokeFromApi("https://api.chucknorris.io/jokes/random");
+        playJoke(joke);
+        return joke;
     }
 
     public List<String> getListOfCategories() {
@@ -62,31 +42,48 @@ public class ChuckNorrisJokesService {
                     new ParameterizedTypeReference<>() {}
             );
 
-            List<String> categories = response.getBody();
-
-            if (categories != null) {
-                return categories;
-            } else {
-                throw new RestClientException("Could not get categories");
+            if (response.getBody() == null || !response.getStatusCode().is2xxSuccessful()) {
+                throw new ChuckNorrisApiException("Failed to retrieve joke categories");
             }
+
+            return response.getBody();
         } catch (RestClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            return null;
+            throw new ChuckNorrisApiException("Failed to communicate with Chuck Norris API", e);
         }
     }
 
     public String getAndPlayRandomJokeByCategory(String category) {
-        try {
-            String apiUrlFormat = "https://api.chucknorris.io/jokes/random?category=%s";
-
-            ResponseEntity<String> response = restTemplate.getForEntity(String.format(apiUrlFormat, category), String.class);
-            String joke = response.getBody();
-
-            playJoke(joke);
-            return joke;
-        } catch (RestClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            return e.getMessage();
+        if (category == null || category.isEmpty()) {
+            throw new IllegalArgumentException("Category cannot be null or empty");
         }
+
+        String joke = getJokeFromApi(
+                String.format("https://api.chucknorris.io/jokes/random?category=%s", category)
+        );
+        playJoke(joke);
+        return joke;
+    }
+
+    private String getJokeFromApi(String apiUrl) {
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(apiUrl, String.class);
+
+            if (response.getBody() == null || !response.getStatusCode().is2xxSuccessful()) {
+                throw new ChuckNorrisApiException("Failed to retrieve joke from API");
+            }
+
+            return response.getBody();
+        } catch (RestClientException e) {
+            throw new ChuckNorrisApiException("Failed to communicate with Chuck Norris API", e);
+        }
+    }
+
+    private void playJoke(String joke) {
+        if (joke == null || joke.isEmpty()) {
+            throw new ChuckNorrisApiException("Received empty joke from API");
+        }
+
+        byte[] audioData = voiceRssService.getVoiceRss(joke);
+        audioPlaybackService.playAudioWithClip(audioData);
     }
 }
