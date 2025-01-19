@@ -1,6 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
-import org.junit.jupiter.api.Assertions;
+import com.patrykpalka.portfolio.exception.InvalidTextException;
+import com.patrykpalka.portfolio.exception.VoiceRssApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,6 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -22,21 +27,6 @@ class VoiceRssServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
-    String apiUrl;
-
-    @BeforeEach
-    void setUp() {
-        String urlFormat = "https://api.voicerss.org/?key=%s&hl=%s&v=%s&c=%s&f=%s&src=%s";
-
-        String key = "279b6ea964d74e8aa6ccb53a08593545";
-        String language = "en-us";
-        String voice = "Mary";
-        String audioCodec = "WAV";
-        String audioFormat = "44khz_16bit_stereo";
-
-        apiUrl = String.format(urlFormat, key, language, voice, audioCodec, audioFormat, "test");
-    }
-
     @Test
     void shouldReturnAudioDataWhenApiIsAvailable() {
         // given
@@ -44,64 +34,50 @@ class VoiceRssServiceTest {
         ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(audioData);
 
         when(restTemplate.getForEntity(
-                apiUrl,
-                byte[].class
+                anyString(),
+                eq(byte[].class)
         )).thenReturn(responseEntity);
 
         // when
         byte[] response = voiceRssService.getVoiceRss("test");
 
         // then
-        Assertions.assertArrayEquals(audioData, response);
+        assertArrayEquals(audioData, response);
     }
 
     @Test
-    void shouldReturnNullWhenApiCallFails() {
+    void shouldThrowExceptionWhenTextIsEmpty() {
+        assertThrows(InvalidTextException.class, () -> voiceRssService.getVoiceRss(""));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenTextIsNull() {
+        assertThrows(InvalidTextException.class, () -> voiceRssService.getVoiceRss(null));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenApiCallFails() {
         // given
         when(restTemplate.getForEntity(
-                apiUrl,
-                byte[].class
-        )).thenThrow(new RestClientException("Invalid response from Voice RSS API"));
-
-        // when
-        byte[] response = voiceRssService.getVoiceRss("test");
+                anyString(),
+                eq(byte[].class)
+        )).thenThrow(new RestClientException("API Error"));
 
         // then
-        Assertions.assertNull(response);
+        assertThrows(VoiceRssApiException.class, () -> voiceRssService.getVoiceRss("test"));
     }
 
     @Test
-    void shouldReturnNullWhenResponseBodyIsNull() {
+    void shouldThrowExceptionForNullResponse() {
         // given
         ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(null);
 
         when(restTemplate.getForEntity(
-                apiUrl,
-                byte[].class
+                anyString(),
+                eq(byte[].class)
         )).thenReturn(responseEntity);
 
-        // when
-        byte[] response = voiceRssService.getVoiceRss("test");
-
         // then
-        Assertions.assertNull(response);
-    }
-
-    @Test
-    void shouldReturnNullWhenStatusCodeIsNot2xx() {
-        // given
-        byte[] audioData = "audio".getBytes();
-        ResponseEntity<byte[]> responseEntity = ResponseEntity.badRequest().body(audioData);
-
-        when(restTemplate.getForEntity(
-                apiUrl,
-                byte[].class
-        )).thenReturn(responseEntity);
-
-        // when
-        byte[] response = voiceRssService.getVoiceRss("test");
-
-        // then
-        Assertions.assertNull(response);
+        assertThrows(VoiceRssApiException.class, () -> voiceRssService.getVoiceRss("test text"));
     }
 }

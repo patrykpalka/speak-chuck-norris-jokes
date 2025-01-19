@@ -53,8 +53,12 @@ public class ChuckNorrisJokesService {
     }
 
     public String getAndPlayRandomJokeByCategory(String category) {
+        List<String> validCategories = getListOfCategories();
+
         if (category == null || category.isEmpty()) {
             throw new IllegalArgumentException("Category cannot be null or empty");
+        } else if (!validCategories.contains(category)) {
+            throw new IllegalArgumentException("Category is not valid");
         }
 
         String joke = getJokeFromApi(

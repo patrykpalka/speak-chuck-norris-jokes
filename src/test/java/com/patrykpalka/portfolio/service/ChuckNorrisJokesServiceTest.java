@@ -1,6 +1,6 @@
 package com.patrykpalka.portfolio.service;
 
-import org.junit.jupiter.api.Assertions;
+import com.patrykpalka.portfolio.exception.ChuckNorrisApiException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +14,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -51,24 +53,24 @@ class ChuckNorrisJokesServiceTest {
         String response = chuckNorrisJokesService.getAndPlayRandomJoke();
 
         // then
-        Assertions.assertEquals(joke, response);
+        assertEquals(joke, response);
         verify(voiceRssService).getVoiceRss(joke);
         verify(audioPlaybackService).playAudioWithClip(audioData);
     }
 
     @Test
-    void shouldReturnErrorMessageWhenApiCallFailsOrWhenJokeIsNull() {
+    void shouldThrowExceptionWhenApiCallFails() {
         // given
         when(restTemplate.getForEntity(
                 "https://api.chucknorris.io/jokes/random",
                 String.class
-        )).thenReturn(ResponseEntity.ok(null));
-
-        // when
-        String response = chuckNorrisJokesService.getAndPlayRandomJoke();
+        )).thenThrow(new RestClientException("API Error"));
 
         // then
-        Assertions.assertEquals("Could not get joke", response);
+        assertThrows(ChuckNorrisApiException.class, () -> {
+            chuckNorrisJokesService.getAndPlayRandomJoke();
+        });
+
         verify(voiceRssService, never()).getVoiceRss(anyString());
         verify(audioPlaybackService, never()).playAudioWithClip(any());
     }
@@ -92,64 +94,22 @@ class ChuckNorrisJokesServiceTest {
         List<String> response = chuckNorrisJokesService.getListOfCategories();
 
         // then
-        Assertions.assertEquals(categories, response);
+        assertEquals(categories, response);
     }
 
     @Test
-    void shouldReturnNullWhenCategoriesApiCallFailsOrResponseIsNull() {
+    void shouldThrowExceptionWhenCategoriesApiCallFails() {
         // given
         when(restTemplate.exchange(
                 "https://api.chucknorris.io/jokes/categories",
                 HttpMethod.GET,
                 null,
                 new ParameterizedTypeReference<List<String>>() {}
-        )).thenReturn(ResponseEntity.ok(null));
-
-        // when
-        List<String> response = chuckNorrisJokesService.getListOfCategories();
+        )).thenThrow(new RestClientException("API Error"));
 
         // then
-        Assertions.assertNull(response);
-    }
-
-    @Test
-    void shouldReturnJokeFromCategoryWhenApiIsAvailable() {
-        // given
-        String joke = "Chuck Norris can't test for equality because he has no equal.";
-        byte[] audioData = "audio".getBytes();
-
-        when(restTemplate.getForEntity(
-                "https://api.chucknorris.io/jokes/random?category=dev",
-                String.class
-        )).thenReturn(ResponseEntity.ok(joke));
-        when(voiceRssService.getVoiceRss(joke)).thenReturn(audioData);
-        doNothing().when(audioPlaybackService).playAudioWithClip(audioData);
-
-        // when
-        String response = chuckNorrisJokesService.getAndPlayRandomJokeByCategory("dev");
-
-        // then
-        Assertions.assertEquals(joke, response);
-        verify(voiceRssService).getVoiceRss(joke);
-        verify(audioPlaybackService).playAudioWithClip(audioData);
-    }
-
-    @Test
-    void shouldReturnErrorMessageWhenCategoryApiCallFailsOrWhenJokeIsNull() {
-        // given
-        String errorMessage = "Could not get joke";
-
-        when(restTemplate.getForEntity(
-                "https://api.chucknorris.io/jokes/random?category=dev",
-                String.class
-        )).thenThrow(new RestClientException(errorMessage));
-
-        // when
-        String response = chuckNorrisJokesService.getAndPlayRandomJokeByCategory("dev");
-
-        // then
-        Assertions.assertEquals(errorMessage, response);
-        verify(voiceRssService, never()).getVoiceRss(anyString());
-        verify(audioPlaybackService, never()).playAudioWithClip(any());
+        assertThrows(ChuckNorrisApiException.class, () -> {
+            chuckNorrisJokesService.getListOfCategories();
+        });
     }
 }

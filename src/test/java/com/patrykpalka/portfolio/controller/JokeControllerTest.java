@@ -1,5 +1,7 @@
 package com.patrykpalka.portfolio.controller;
 
+import com.patrykpalka.portfolio.dto.CategoryResponseDTO;
+import com.patrykpalka.portfolio.dto.RandomJokeResponseDTO;
 import com.patrykpalka.portfolio.service.ChuckNorrisJokesService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,14 +41,15 @@ class JokeControllerTest {
         when(jokesService.getAndPlayRandomJoke()).thenReturn(expectedJoke);
 
         // when
-        ResponseEntity<String> response = restTemplate.getForEntity(
+        ResponseEntity<RandomJokeResponseDTO> response = restTemplate.getForEntity(
                 getBaseUrl() + "/random",
-                String.class
+                RandomJokeResponseDTO.class
         );
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(expectedJoke);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().joke()).isEqualTo(expectedJoke);
     }
 
     @Test
@@ -57,14 +60,15 @@ class JokeControllerTest {
         when(jokesService.getAndPlayRandomJokeByCategory(category)).thenReturn(expectedJoke);
 
         // when
-        ResponseEntity<String> response = restTemplate.getForEntity(
+        ResponseEntity<RandomJokeResponseDTO> response = restTemplate.getForEntity(
                 getBaseUrl() + "/random?category=" + category,
-                String.class
+                RandomJokeResponseDTO.class
         );
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(expectedJoke);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().joke()).isEqualTo(expectedJoke);
     }
 
     @Test
@@ -74,32 +78,17 @@ class JokeControllerTest {
         when(jokesService.getListOfCategories()).thenReturn(expectedCategories);
 
         // when
-        ResponseEntity<List> response = restTemplate.getForEntity(
+        ResponseEntity<CategoryResponseDTO> response = restTemplate.getForEntity(
                 getBaseUrl() + "/categories",
-                List.class
+                CategoryResponseDTO.class
         );
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotEmpty();
-        assertThat(response.getBody()).hasSize(3);
-    }
-
-    @Test
-    void shouldHandleInvalidCategory() {
-        // given
-        String invalidCategory = "invalid";
-        String expectedJoke = "No joke found for this category";
-        when(jokesService.getAndPlayRandomJokeByCategory(invalidCategory)).thenReturn(expectedJoke);
-
-        // when
-        ResponseEntity<String> response = restTemplate.getForEntity(
-                getBaseUrl() + "/random?category=" + invalidCategory,
-                String.class
-        );
-
-        // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(expectedJoke);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().categories())
+                .isNotEmpty()
+                .hasSize(3)
+                .containsExactlyElementsOf(expectedCategories);
     }
 }
