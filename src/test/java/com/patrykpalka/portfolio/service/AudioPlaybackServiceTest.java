@@ -1,5 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
+import com.patrykpalka.portfolio.exception.AudioDataEmptyException;
+import com.patrykpalka.portfolio.exception.AudioPlaybackException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +14,7 @@ import javax.sound.sampled.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -41,7 +44,7 @@ class AudioPlaybackServiceTest {
             // given
             audioSystem.when(() -> AudioSystem.getAudioInputStream(any(ByteArrayInputStream.class)))
                     .thenReturn(audioInputStream);
-            audioSystem.when(() -> AudioSystem.getClip())
+            audioSystem.when(AudioSystem::getClip)
                     .thenReturn(clip);
 
             // when
@@ -55,77 +58,65 @@ class AudioPlaybackServiceTest {
     }
 
     @Test
-    void shouldHandleNullAudioData() throws Exception {
-        try (MockedStatic<AudioSystem> audioSystem = mockStatic(AudioSystem.class)) {
-            // when
-            audioPlaybackService.playAudioWithClip(null);
-
-            // then
-            audioSystem.verify(() -> AudioSystem.getAudioInputStream(any(ByteArrayInputStream.class)), never());
-            verifyNoInteractions(clip);
-        }
+    void shouldThrowAudioDataEmptyExceptionForNullAudioData() {
+        // when & then
+        assertThrows(AudioDataEmptyException.class, () ->
+                audioPlaybackService.playAudioWithClip(null)
+        );
     }
 
     @Test
-    void shouldHandleEmptyAudioData() throws Exception {
-        try (MockedStatic<AudioSystem> audioSystem = mockStatic(AudioSystem.class)) {
-            // when
-            audioPlaybackService.playAudioWithClip(new byte[0]);
-
-            // then
-            audioSystem.verify(() -> AudioSystem.getAudioInputStream(any(ByteArrayInputStream.class)), never());
-            verifyNoInteractions(clip);
-        }
+    void shouldThrowAudioDataEmptyExceptionForEmptyAudioData() {
+        // when & then
+        assertThrows(AudioDataEmptyException.class, () ->
+                audioPlaybackService.playAudioWithClip(new byte[0])
+        );
     }
 
     @Test
-    void shouldHandleUnsupportedAudioFileException() throws Exception {
+    void shouldThrowAudioPlaybackExceptionForUnsupportedAudioFile() {
         try (MockedStatic<AudioSystem> audioSystem = mockStatic(AudioSystem.class)) {
             // given
             audioSystem.when(() -> AudioSystem.getAudioInputStream(any(ByteArrayInputStream.class)))
                     .thenThrow(new UnsupportedAudioFileException("Unsupported audio format"));
 
-            // when
-            audioPlaybackService.playAudioWithClip(validAudioData);
-
-            // then
-            verifyNoInteractions(clip);
+            // when & then
+            assertThrows(AudioPlaybackException.class, () ->
+                    audioPlaybackService.playAudioWithClip(validAudioData)
+            );
         }
     }
 
     @Test
-    void shouldHandleLineUnavailableException() throws Exception {
+    void shouldThrowAudioPlaybackExceptionForLineUnavailable() {
         try (MockedStatic<AudioSystem> audioSystem = mockStatic(AudioSystem.class)) {
             // given
             audioSystem.when(() -> AudioSystem.getAudioInputStream(any(ByteArrayInputStream.class)))
                     .thenReturn(audioInputStream);
-            audioSystem.when(() -> AudioSystem.getClip())
+            audioSystem.when(AudioSystem::getClip)
                     .thenThrow(new LineUnavailableException("Audio line unavailable"));
 
-            // when
-            audioPlaybackService.playAudioWithClip(validAudioData);
-
-            // then
-            verifyNoInteractions(clip);
+            // when & then
+            assertThrows(AudioPlaybackException.class, () ->
+                    audioPlaybackService.playAudioWithClip(validAudioData)
+            );
         }
     }
 
     @Test
-    void shouldHandleIOException() throws Exception {
+    void shouldThrowAudioPlaybackExceptionForIOException() throws Exception {
         try (MockedStatic<AudioSystem> audioSystem = mockStatic(AudioSystem.class)) {
             // given
             audioSystem.when(() -> AudioSystem.getAudioInputStream(any(ByteArrayInputStream.class)))
                     .thenReturn(audioInputStream);
-            audioSystem.when(() -> AudioSystem.getClip())
+            audioSystem.when(AudioSystem::getClip)
                     .thenReturn(clip);
             doThrow(new IOException("IO Error")).when(clip).open(any(AudioInputStream.class));
 
-            // when
-            audioPlaybackService.playAudioWithClip(validAudioData);
-
-            // then
-            verify(clip, never()).start();
-            verify(clip, never()).drain();
+            // when & then
+            assertThrows(AudioPlaybackException.class, () ->
+                    audioPlaybackService.playAudioWithClip(validAudioData)
+            );
         }
     }
 }

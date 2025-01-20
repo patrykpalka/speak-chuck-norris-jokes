@@ -1,7 +1,7 @@
 package com.patrykpalka.portfolio.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.patrykpalka.portfolio.exception.InvalidTextException;
+import com.patrykpalka.portfolio.exception.VoiceRssApiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class VoiceRssService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(VoiceRssService.class);
     private final RestTemplate restTemplate;
 
     @Autowired
@@ -20,28 +19,35 @@ public class VoiceRssService {
     }
 
     public byte[] getVoiceRss(String text) {
+        String apiUrl = getApiUrl(text);
+
         try {
-            String urlFormat = "https://api.voicerss.org/?key=%s&hl=%s&v=%s&c=%s&f=%s&src=%s";
-
-            String key = "279b6ea964d74e8aa6ccb53a08593545";
-            String language = "en-us";
-            String voice = "Mary";
-            String audioCodec = "WAV";
-            String audioFormat = "44khz_16bit_stereo";
-
-            String apiUrl = String.format(urlFormat, key, language, voice, audioCodec, audioFormat, text);
-
             ResponseEntity<byte[]> response = restTemplate.getForEntity(apiUrl, byte[].class);
             byte[] responseBody = response.getBody();
 
-            if (responseBody != null && response.getStatusCode().is2xxSuccessful()) {
-                return responseBody;
-            } else {
-                throw new RestClientException("Invalid response from Voice RSS API");
+            if (responseBody == null || !response.getStatusCode().is2xxSuccessful()) {
+                throw new VoiceRssApiException("Invalid response from Voice RSS API");
             }
+
+            return responseBody;
         } catch (RestClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            return null;
+            throw new VoiceRssApiException("Failed to communicate with Voice RSS API", e);
         }
+    }
+
+    private String getApiUrl(String text) {
+        if (text == null || text.isEmpty()) {
+            throw new InvalidTextException("Text cannot be null or empty");
+        }
+
+        String urlFormat = "https://api.voicerss.org/?key=%s&hl=%s&v=%s&c=%s&f=%s&src=%s";
+
+        String key = "279b6ea964d74e8aa6ccb53a08593545";
+        String language = "en-us";
+        String voice = "Mary";
+        String audioCodec = "WAV";
+        String audioFormat = "44khz_16bit_stereo";
+
+        return String.format(urlFormat, key, language, voice, audioCodec, audioFormat, text);
     }
 }
