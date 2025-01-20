@@ -3,6 +3,7 @@ package com.patrykpalka.portfolio.controller;
 import com.patrykpalka.portfolio.dto.CategoryResponseDTO;
 import com.patrykpalka.portfolio.dto.RandomJokeResponseDTO;
 import com.patrykpalka.portfolio.service.ChuckNorrisJokesService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/jokes")
+@Tag(name = "Jokes", description = "Chuck Norris Jokes API with text-to-speech capabilities")
 public class JokeController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JokeController.class);
