@@ -1,8 +1,16 @@
 package com.patrykpalka.portfolio.controller;
 
 import com.patrykpalka.portfolio.dto.CategoryResponseDTO;
+import com.patrykpalka.portfolio.dto.ErrorResponseDTO;
 import com.patrykpalka.portfolio.dto.RandomJokeResponseDTO;
 import com.patrykpalka.portfolio.service.ChuckNorrisJokesService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +24,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/jokes")
+@Tag(name = "Jokes", description = "Chuck Norris Jokes API with text-to-speech capabilities")
 public class JokeController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JokeController.class);
@@ -27,7 +36,21 @@ public class JokeController {
     }
 
     @GetMapping("/random")
-    public ResponseEntity<RandomJokeResponseDTO> randomJoke(@RequestParam(required = false) String category) {
+    @Operation(summary = "Get a random joke", description = "Retrieves and plays a random Chuck Norris joke")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful operation",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RandomJokeResponseDTO.class))}),
+            @ApiResponse(responseCode = "503", description = "Chuck Norris external API difficulties",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid category",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
+    public ResponseEntity<RandomJokeResponseDTO> randomJoke(
+            @Parameter(description = "Category of the joke", example = "dev")
+            @RequestParam(required = false) String category) {
         String joke;
 
         if (category == null) {
@@ -43,6 +66,15 @@ public class JokeController {
     }
 
     @GetMapping("/categories")
+    @Operation(summary = "Get joke categories", description = "Retrieves a list of available joke categories")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful operation",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CategoryResponseDTO.class))}),
+            @ApiResponse(responseCode = "503", description = "Chuck Norris external API difficulties",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
     public ResponseEntity<CategoryResponseDTO> categories() {
         List<String> categories = jokesService.getListOfCategories();
 
