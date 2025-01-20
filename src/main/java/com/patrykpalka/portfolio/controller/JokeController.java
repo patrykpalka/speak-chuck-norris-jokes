@@ -66,6 +66,15 @@ public class JokeController {
     }
 
     @GetMapping("/categories")
+    @Operation(summary = "Get joke categories", description = "Retrieves a list of available joke categories")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful operation",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CategoryResponseDTO.class))}),
+            @ApiResponse(responseCode = "503", description = "Chuck Norris external API difficulties",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
     public ResponseEntity<CategoryResponseDTO> categories() {
         List<String> categories = jokesService.getListOfCategories();
 
