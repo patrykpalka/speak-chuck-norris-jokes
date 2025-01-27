@@ -1,53 +1,51 @@
 package com.patrykpalka.portfolio.service;
 
+import com.patrykpalka.portfolio.dto.ChuckNorrisApiRandomJokeResponseDTO;
 import com.patrykpalka.portfolio.exception.ChuckNorrisApiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientException;
 
 import java.util.List;
 
 @Service
 public class ChuckNorrisJokesService {
 
-    private final RestTemplate restTemplate;
+    private final WebClient jokesApiClient;
     private final VoiceRssService voiceRssService;
     private final AudioPlaybackService audioPlaybackService;
 
     @Autowired
-    public ChuckNorrisJokesService(RestTemplate restTemplate, AudioPlaybackService audioPlaybackService, VoiceRssService voiceRssService) {
-        this.restTemplate = restTemplate;
+    public ChuckNorrisJokesService(WebClient jokesApiClient, AudioPlaybackService audioPlaybackService, VoiceRssService voiceRssService) {
+        this.jokesApiClient = jokesApiClient;
         this.voiceRssService = voiceRssService;
         this.audioPlaybackService = audioPlaybackService;
     }
 
     public String getAndPlayRandomJoke() {
-        String joke = getJokeFromApi("https://api.chucknorris.io/jokes/random");
+        String joke = getJokeFromApi("/jokes/random");
         playJoke(joke);
         return joke;
     }
 
     public List<String> getListOfCategories() {
         try {
-            String apiUrl = "https://api.chucknorris.io/jokes/categories";
+            String urlPath = "/jokes/categories";
 
-            ResponseEntity<List<String>> response = restTemplate.exchange(
-                    apiUrl,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<>() {}
-            );
+            List<String> categories = jokesApiClient.get()
+                    .uri(urlPath)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<String>>() {})
+                    .block();
 
-            if (response.getBody() == null || !response.getStatusCode().is2xxSuccessful()) {
+            if (categories == null || categories.isEmpty()) {
                 throw new ChuckNorrisApiException("Failed to retrieve joke categories");
             }
 
-            return response.getBody();
-        } catch (RestClientException e) {
+            return categories;
+        } catch (WebClientException e) {
             throw new ChuckNorrisApiException("Failed to communicate with Chuck Norris API", e);
         }
     }
@@ -62,22 +60,26 @@ public class ChuckNorrisJokesService {
         }
 
         String joke = getJokeFromApi(
-                String.format("https://api.chucknorris.io/jokes/random?category=%s", category)
+                String.format("/jokes/random?category=%s", category)
         );
         playJoke(joke);
         return joke;
     }
 
-    private String getJokeFromApi(String apiUrl) {
+    private String getJokeFromApi(String urlPath) {
         try {
-            ResponseEntity<String> response = restTemplate.getForEntity(apiUrl, String.class);
+            ChuckNorrisApiRandomJokeResponseDTO jokeBody = jokesApiClient.get()
+                    .uri(urlPath)
+                    .retrieve()
+                    .bodyToMono(ChuckNorrisApiRandomJokeResponseDTO.class)
+                    .block();
 
-            if (response.getBody() == null || !response.getStatusCode().is2xxSuccessful()) {
+            if (jokeBody == null) {
                 throw new ChuckNorrisApiException("Failed to retrieve joke from API");
             }
 
-            return response.getBody();
-        } catch (RestClientException e) {
+            return jokeBody.value();
+        } catch (WebClientException e) {
             throw new ChuckNorrisApiException("Failed to communicate with Chuck Norris API", e);
         }
     }
