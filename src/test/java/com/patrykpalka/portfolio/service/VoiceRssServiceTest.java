@@ -8,15 +8,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClient.RequestHeadersUriSpec;
+import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
+import org.springframework.web.reactive.function.client.WebClient.ResponseSpec;
+import org.springframework.web.reactive.function.client.WebClientException;
+import reactor.core.publisher.Mono;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class VoiceRssServiceTest {
@@ -25,23 +26,31 @@ class VoiceRssServiceTest {
     private VoiceRssService voiceRssService;
 
     @Mock
-    private RestTemplate restTemplate;
+    private WebClient voiceRssApiClient;
+
+    @Mock
+    private RequestHeadersUriSpec requestHeadersUriSpec;
+
+    @Mock
+    private RequestHeadersSpec requestHeadersSpec;
+
+    @Mock
+    private ResponseSpec responseSpec;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(voiceRssApiClient.get()).thenReturn(requestHeadersUriSpec);
+        lenient().when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        lenient().when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+    }
 
     @Test
     void shouldReturnAudioDataWhenApiIsAvailable() {
-        // given
         byte[] audioData = "audio".getBytes();
-        ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(audioData);
+        when(responseSpec.bodyToMono(byte[].class)).thenReturn(Mono.just(audioData));
 
-        when(restTemplate.getForEntity(
-                anyString(),
-                eq(byte[].class)
-        )).thenReturn(responseEntity);
-
-        // when
         byte[] response = voiceRssService.getVoiceRss("test");
 
-        // then
         assertArrayEquals(audioData, response);
     }
 
@@ -57,27 +66,15 @@ class VoiceRssServiceTest {
 
     @Test
     void shouldThrowExceptionWhenApiCallFails() {
-        // given
-        when(restTemplate.getForEntity(
-                anyString(),
-                eq(byte[].class)
-        )).thenThrow(new RestClientException("API Error"));
+        when(responseSpec.bodyToMono(byte[].class)).thenThrow(new WebClientException("API Error") {});
 
-        // then
         assertThrows(VoiceRssApiException.class, () -> voiceRssService.getVoiceRss("test"));
     }
 
     @Test
     void shouldThrowExceptionForNullResponse() {
-        // given
-        ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(null);
+        when(responseSpec.bodyToMono(byte[].class)).thenReturn(Mono.justOrEmpty(null));
 
-        when(restTemplate.getForEntity(
-                anyString(),
-                eq(byte[].class)
-        )).thenReturn(responseEntity);
-
-        // then
         assertThrows(VoiceRssApiException.class, () -> voiceRssService.getVoiceRss("test text"));
     }
 }

@@ -22,11 +22,15 @@ public class VoiceRssService {
         String apiUrlPath = apiUrlPath(text);
 
         try {
-            return voiceRssApiClient.get()
+            byte[] result = voiceRssApiClient.get()
                     .uri(apiUrlPath)
                     .retrieve()
                     .bodyToMono(byte[].class)
                     .block();
+            if (result == null) {
+                throw new VoiceRssApiException("Voice RSS API returned null response");
+            }
+            return result;
         } catch (WebClientException e) {
             throw new VoiceRssApiException("Failed to communicate with Voice RSS API", e);
         }
